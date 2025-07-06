@@ -5,7 +5,7 @@ OUT_ROOT="/Volumes/SEAGATE_NIKHIL/OASIS_Processed"
 
 mkdir -p "$OUT_ROOT"
 
-echo "Starting OASIS-2 reorganization and robust averaging..."
+echo "Starting OASIS-2 PART 2 reorganization and robust averaging..."
 
 for session_path in "$RAW_ROOT"/*; do
   [ -d "$session_path" ] || continue
@@ -25,12 +25,13 @@ for session_path in "$RAW_ROOT"/*; do
     base=${img%.nifti.img}
     hdr="$base.nifti.hdr"
     nii="$base.nii.gz"
+    abs_nii="$session_path/RAW/$base.nii.gz"
     if [ -f "$img" ] && [ -f "$hdr" ]; then
       if [ ! -f "$nii" ]; then
         echo "  Converting $img + $hdr to $nii"
         mri_convert "$img" "$nii" > /dev/null 2>&1
       fi
-      nii_list+=("$nii")
+      nii_list+=("$abs_nii")
     fi
   done
 
@@ -43,7 +44,7 @@ for session_path in "$RAW_ROOT"/*; do
   # Run robust averaging
   cd "$out_dir"
   echo "  Averaging for $session_name..."
-  mri_robust_template --mov "${nii_list[@]}" --average 1 --template T1_avg.mgz > /dev/null 2>&1
+  mri_robust_template --mov "${nii_list[@]}" --average 1 --template T1_avg.mgz --satit
 
   # Optional: Skull-strip
   # echo "  Skull-stripping $out_dir/T1_avg.mgz..."
