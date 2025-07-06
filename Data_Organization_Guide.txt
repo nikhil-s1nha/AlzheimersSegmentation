@@ -1,0 +1,65 @@
+
+Alzheimer's MRI Data Organization for Research
+
+GOAL:
+Create a structure where:
+- You have one high-quality preprocessed image per session (from mpr-1,2,3)
+- You know exactly which subject it is
+- You know the chronological order of sessions (MR1, MR2, MR3...)
+- You retain all clinical + demographic labels (e.g., age, sex, CDR, MMSE)
+
+1. DIRECTORY STRUCTURE (Recommended)
+OASIS_Processed/
+├── OAS2_0001/
+│   ├── session_1/
+│   │   └── T1_avg.mgz  ← from averaging mpr-1,2,3
+│   ├── session_2/
+│   │   └── T1_avg.mgz
+│   └── metadata.json   ← subject-level info (age, sex, CDR, etc.)
+├── OAS2_0002/
+│   ├── session_1/
+│   └── ...
+└── master_index.csv    ← every row = subject + session metadata
+
+2. WHAT YOU NEED PER SUBJECT:
+A. Subject ID: (e.g. OAS2_0001)
+B. Each session's date or index (MR1, MR2, etc.)
+C. Preprocessed T1 MRI per session
+   - Averaged + skull-stripped if needed
+   - Save as T1_avg.mgz or T1.nii.gz
+D. Metadata file per subject or centralized CSV including:
+| Field                   | Description                      |
+|------------------------|----------------------------------|
+| Subject ID             | OAS2_0001                        |
+| Session index          | 1, 2, 3                          |
+| Age at scan            | From OASIS Demographics          |
+| Sex                    | M / F                            |
+| Handedness             | R / L                            |
+| Education level        | e.g. 16                          |
+| MMSE score             | Cognitive test                   |
+| CDR                    | Clinical Dementia Rating         |
+| Group                  | Demented / Nondemented           |
+| Image path             | Full path to T1_avg file         |
+
+3. HOW TO AVERAGE mpr-1,2,3 PER SESSION:
+Use FreeSurfer’s robust template tool:
+mri_robust_template --mov mpr-1.nii.gz mpr-2.nii.gz mpr-3.nii.gz \
+                    --average 1 \
+                    --template T1_avg.mgz
+
+Then skull-strip it:
+mri_synthstrip -i T1_avg.mgz -o T1_stripped.mgz
+
+4. CENTRAL master_index.csv FORMAT:
+| SubjectID  | Session | Path_to_MRI         | Age | Sex | CDR | MMSE | Diagnosis  |
+|------------|---------|---------------------|-----|-----|-----|------|------------|
+| OAS2_0001  | 1       | path/to/T1_avg.mgz  | 87  | M   | 0   | 30   | Nondemented|
+| OAS2_0001  | 2       | path/to/T1_avg.mgz  | 88  | M   | 0.5 | 28   | Demented   |
+| ...        | ...     | ...                 | ... | ... | ... | ...  | ...        |
+
+Final Checks for Each Person:
+- [x] Do you have all sessions and know their order?
+- [x] Are repeated scans averaged into one?
+- [x] Do you have clinical/demographic data?
+- [x] Is it machine-readable (CSV or JSON)?
+- [x] Are all files skull-stripped, normalized, and in the same format (.mgz or .nii.gz)?

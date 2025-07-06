@@ -1,0 +1,55 @@
+{
+  "subjects_dir": "subjects",
+  "stats_dir": "stats",
+  "aseg_file": "aseg.stats",
+  "lh_aparc_file": "lh.aparc.stats",
+  "rh_aparc_file": "rh.aparc.stats",
+  "diagnosis_file": "clinical_data.csv",
+  "output_dir": "neurotokens_output",
+  "subject_prefix": "sub-",
+  "aseg_columns": {
+    "region_name": 4,
+    "volume": 3
+  },
+  "aparc_columns": {
+    "region_name": 0,
+    "surface_area": 2,
+    "thickness": 4
+  },
+  "hemisphere_names": {
+    "lh": "Left",
+    "rh": "Right"
+  },
+  "token_format": {
+    "value_precision": 1,
+    "z_score_precision": 1
+  },
+  "transformer_config": {
+    "max_tokens": 200,
+    "pad_token": "[PAD]",
+    "unk_token": "[UNK]",
+    "sep_token": "[SEP]"
+  },
+  "data_validation": {
+    "min_volume": 0.0,
+    "max_volume": 100000.0,
+    "min_thickness": 0.5,
+    "max_thickness": 5.0,
+    "min_surface_area": 0.0,
+    "max_surface_area": 50000.0
+  },
+  "diagnosis_mapping": {
+    "cdr_score_ranges": {
+      "normal": [0.0, 0.0],
+      "very_mild": [0.5, 0.5],
+      "mild": [1.0, 1.0],
+      "moderate": [2.0, 2.0],
+      "severe": [3.0, 3.0]
+    },
+    "diagnosis_categories": {
+      "normal": ["Normal", "CN", "Control"],
+      "mci": ["MCI", "Mild Cognitive Impairment"],
+      "ad": ["AD", "Alzheimer's Disease", "Dementia"]
+    }
+  }
+} 

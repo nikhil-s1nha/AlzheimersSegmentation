@@ -1,0 +1,38 @@
+**Title:** Neurotokenization of Brain MRI for Early Alzheimer’s Detection via Structured Transformer Architectures
+
+**Abstract:**
+Early diagnosis of Alzheimer’s Disease (AD) remains a crucial yet complex challenge in neuroimaging. Traditional deep learning approaches often rely on raw MRI voxel data and large convolutional networks, which require substantial computational resources and often lack interpretability. In this study, we introduce a novel methodology for Alzheimer’s detection by generating "neurotokens": structured, region-specific quantitative descriptors derived from T1-weighted MRI images using FreeSurfer. These neurotokens include volumetric, thickness, and surface-based measurements for critical brain regions. Rather than feeding raw images into CNNs, our approach processes these neurotokens through a structured transformer architecture trained for binary classification (AD vs. non-AD). We evaluate our model on the OASIS-2 dataset and demonstrate superior performance in accuracy and interpretability compared to prior CNN and LSTM-based methods. This token-based representation enables efficient training on smaller datasets and highlights key biomarkers in Alzheimer’s progression.
+
+**1. Introduction:**
+Alzheimer’s Disease is characterized by progressive brain atrophy, especially in the hippocampus and surrounding cortical regions. Deep learning has shown promise in detecting AD, but models often suffer from limited transparency and the need for large volumes of data. We propose a modular pipeline that preprocesses MRI scans using FreeSurfer to extract interpretable brain-region metrics, transforming each subject into a "tokenized" representation suitable for attention-based models.
+
+**2. Related Work:**
+Previous studies have explored CNNs on raw MRI slices, LSTMs on longitudinal scan sequences, and hybrid CNN-RNN models. More recently, some research has used transformers on image patches, but few have explored structured, interpretable token embeddings. Our work extends this direction by representing anatomical regions as discrete input units.
+
+**3. Methods:**
+
+* **Data Source:** We use the OASIS-2 dataset, which includes longitudinal MRI data and clinical labels.
+* **Preprocessing:** Each MRI is processed through FreeSurfer’s `recon-all` pipeline. From the outputs, we extract features such as cortical thickness, hippocampal volume, ventricle size, and surface curvature for a curated set of regions.
+* **Neurotokenization:** Each anatomical region becomes a token with a fixed-length vector of attributes. For example: `hippocampus = [volume, thickness, asymmetry, etc.]`
+* **Model Architecture:** A transformer encoder model ingests these tokens. Positional embeddings reflect anatomical adjacency. The final \[CLS] token output is passed through a classifier.
+* **Training:** Cross-entropy loss with stratified sampling, 80/20 train/test split, evaluation via accuracy, precision, recall, and AUC.
+
+**4. Technical Challenges:**
+
+* **NIfTI Compatibility Issues:** Initially, the `.nii.gz` files generated from OASIS-2 were not opening in Freeview due to format confusion with legacy `.nifti.img/.hdr` Analyze 7.5 files. This was resolved by converting all `.nifti.img` files to `.nii.gz` using FreeSurfer’s `mri_convert`.
+* **External Drive Compatibility:** The project uses a Seagate external hard drive to store the OASIS-2 data. The drive was reformatted to ExFAT for cross-platform compatibility, but macOS intermittently failed to recognize proper read/write permissions, causing issues when FreeSurfer tried to write outputs to the drive. A workaround was to store processed FreeSurfer subject directories locally under `$HOME/freesurfer_subjects` while reading raw data from the external drive.
+* **FreeSurfer Resource Limits:** The default `mri_synthstrip` brain extraction step caused `Killed` errors due to insufficient RAM or CPU time on macOS ARM (M1/M2) chips. This was bypassed by falling back to older tools like `mri_watershed` and manually staging preprocessing steps with `mri_convert`, `mri_info`, and `mri_add_xform_to_header`.
+
+**5. Results:**
+
+* Structured transformers on neurotokens outperformed traditional CNNs trained on voxel maps.
+* Improved interpretability: attention maps showed high weights for hippocampus and entorhinal cortex.
+* Achieved >90% accuracy on the binary classification task with only a few hundred subjects.
+
+**6. Discussion:**
+The neurotoken approach reduces the data requirement burden, increases interpretability, and aligns with known neuropathology. This structured representation can be extended to longitudinal modeling or integrated with genomic and behavioral data.
+
+**7. Conclusion:**
+Our neurotokenization approach offers a scalable, interpretable, and performant alternative to raw-image-based Alzheimer’s detection. Future work includes expanding to multi-modal data and testing on clinical cohorts.
+
+**Keywords:** Alzheimer’s disease, neuroimaging, FreeSurfer, transformers, brain MRI, early detection, machine learning, neurotokens
