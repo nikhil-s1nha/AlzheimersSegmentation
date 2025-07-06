@@ -30,6 +30,29 @@ OASIS_Processed/
 └── master_index.csv
 ```
 
+## Project Structure
+
+```
+AlzheimersSegmentation/
+├── data_processing/          # Core neurotoken processing modules
+│   ├── freesurfer_parser.py  # FreeSurfer output parser
+│   ├── oasis2_neurotokens.py # OASIS-2 specific processor with transformer
+│   └── oasis2_utils.py       # Utility functions for metadata processing
+├── scripts/                  # Batch processing and automation scripts
+│   ├── nifti_to_freesurfer.py # NIfTI to FreeSurfer format converter
+│   ├── batch_organize_oasis.sh # OASIS-2 data organization script
+│   ├── batch_skullstrip.sh   # Skull-stripping automation script
+│   └── batch_convert_part1.sh # NIfTI conversion scripts
+├── configs/                  # Configuration files
+│   ├── config.py             # General configuration parameters
+│   └── oasis2_config.json    # OASIS-2 specific configuration
+├── examples/                 # Usage examples and demonstrations
+│   └── oasis2_example.py     # Complete example pipeline
+├── random/                   # Unused/legacy files
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
+```
+
 ## Installation
 
 ```bash
@@ -42,13 +65,13 @@ pip install -r requirements.txt
 
 ```bash
 # Convert NIfTI files to FreeSurfer format
-python nifti_to_freesurfer.py /path/to/nifti/files /path/to/output
+python scripts/nifti_to_freesurfer.py /path/to/nifti/files /path/to/output
 
 # Organize OASIS-2 data
-./batch_organize_oasis.sh
+./scripts/batch_organize_oasis.sh
 
 # Generate metadata
-python -c "import oasis2_utils as o2u; df = o2u.parse_oasis_demographics('Oasis Longitudinal Demographics.xlsx'); o2u.create_subject_metadata_files(df, '/path/to/processed'); o2u.create_master_index_csv(df, '/path/to/processed', '/path/to/processed/master_index.csv')"
+python -c "import sys; sys.path.append('data_processing'); import oasis2_utils as o2u; df = o2u.parse_oasis_demographics('Oasis Longitudinal Demographics.xlsx'); o2u.create_subject_metadata_files(df, '/path/to/processed'); o2u.create_master_index_csv(df, '/path/to/processed', '/path/to/processed/master_index.csv')"
 ```
 
 ### FreeSurfer Processing
@@ -61,6 +84,8 @@ recon-all -i /path/to/T1_avg.mgz -s subject_id -all
 ### Neurotoken Generation
 
 ```python
+import sys
+sys.path.append('data_processing')
 from freesurfer_parser import FreeSurferParser
 
 parser = FreeSurferParser("/path/to/subjects")
@@ -72,9 +97,11 @@ parser.save_tokens(tokens, "output.json")
 ### Transformer Training
 
 ```python
+import sys
+sys.path.append('data_processing')
 from oasis2_neurotokens import OASIS2NeuroTokenProcessor
 
-processor = OASIS2NeuroTokenProcessor("config.json")
+processor = OASIS2NeuroTokenProcessor("configs/oasis2_config.json")
 train_dataset, test_dataset = processor.prepare_transformer_dataset(tokens_list, labels)
 model = processor.train_transformer(train_dataset, test_dataset)
 ```
@@ -90,16 +117,6 @@ model = processor.train_transformer(train_dataset, test_dataset)
 - **NIfTI Compatibility**: Resolved format confusion between `.nii.gz` and legacy `.nifti.img/.hdr` files
 - **External Drive Compatibility**: Addressed macOS read/write permission issues with Seagate external drives
 - **FreeSurfer Resource Limits**: Bypassed `mri_synthstrip` memory issues on ARM chips using alternative preprocessing
-
-## Files
-
-- `freesurfer_parser.py`: Core parser for FreeSurfer output files
-- `oasis2_neurotokens.py`: OASIS-2 specific processor with transformer implementation
-- `oasis2_utils.py`: Utility functions for metadata processing
-- `nifti_to_freesurfer.py`: NIfTI to FreeSurfer format converter
-- `batch_organize_oasis.sh`: Batch processing script for OASIS-2 data
-- `config.py`: Configuration parameters
-- `requirements.txt`: Python dependencies
 
 ## Citation
 
