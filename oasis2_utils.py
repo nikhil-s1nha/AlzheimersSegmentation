@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+import nibabel as nib
 
 def create_sample_oasis2_data(data_root: str, num_subjects: int = 10):
     """
@@ -453,43 +454,216 @@ def prepare_transformer_dataset(neurotokens_file: str, diagnosis_file: str,
     
     return dataset
 
-def parse_oasis_demographics(excel_path):
-    """
-    Parse the OASIS Longitudinal Demographics Excel file and return a DataFrame.
-    """
+def parse_oasis_demographics(excel_path: str) -> pd.DataFrame:
+    """Parse OASIS Longitudinal Demographics Excel file."""
     df = pd.read_excel(excel_path)
-    # Standardize column names (strip whitespace)
     df.columns = [c.strip() for c in df.columns]
     return df
 
-def create_subject_metadata_files(df, processed_root):
-    """
-    For each subject, create a metadata.json file in their OASIS_Processed/<subject>/ directory.
-    """
+def create_subject_metadata_files(df: pd.DataFrame, processed_root: str) -> None:
+    """Create metadata.json for each subject."""
     grouped = df.groupby('Subject ID')
     for subj_id, group in grouped:
         subj_dir = os.path.join(processed_root, subj_id)
         os.makedirs(subj_dir, exist_ok=True)
-        # Convert group to records (one per session)
         sessions = group.to_dict(orient='records')
-        # Save metadata.json
         with open(os.path.join(subj_dir, 'metadata.json'), 'w') as f:
             json.dump({'subject_id': subj_id, 'sessions': sessions}, f, indent=2)
 
-def create_master_index_csv(df, processed_root, out_csv_path):
-    """
-    Create a master_index.csv with all sessions and paths to T1_avg.mgz.
-    """
+def create_master_index_csv(df: pd.DataFrame, processed_root: str, out_csv_path: str) -> None:
+    """Create master index CSV with all sessions and metadata."""
     rows = []
     for _, row in df.iterrows():
         subj_id = row['Subject ID']
-        session_idx = row['Visit']
+        visit = row['Visit']
+        session_idx = visit.replace('MR', '')
+        
+        # Construct path to T1_avg.mgz
         t1_path = os.path.join(processed_root, subj_id, f'session_{session_idx}', 'T1_avg.mgz')
-        row_out = row.to_dict()
-        row_out['Path_to_MRI'] = t1_path
-        rows.append(row_out)
-    out_df = pd.DataFrame(rows)
-    out_df.to_csv(out_csv_path, index=False)
+        
+        # Check if file exists
+        if os.path.exists(t1_path):
+            row_dict = row.to_dict()
+            row_dict['t1_path'] = t1_path
+            rows.append(row_dict)
+    
+    result_df = pd.DataFrame(rows)
+    result_df.to_csv(out_csv_path, index=False)
+
+def extract_freesurfer_stats(subject_dir: str) -> Dict:
+    """Extract FreeSurfer statistics from aseg.stats and aparc.stats files."""
+    stats = {}
+    
+    # aseg.stats - subcortical volumes
+    aseg_path = os.path.join(subject_dir, 'stats', 'aseg.stats')
+    if os.path.exists(aseg_path):
+        aseg_stats = parse_aseg_stats(aseg_path)
+        stats['aseg'] = aseg_stats
+    
+    # lh.aparc.stats - left hemisphere cortical
+    lh_aparc_path = os.path.join(subject_dir, 'stats', 'lh.aparc.stats')
+    if os.path.exists(lh_aparc_path):
+        lh_stats = parse_aparc_stats(lh_aparc_path)
+        stats['lh_aparc'] = lh_stats
+    
+    # rh.aparc.stats - right hemisphere cortical
+    rh_aparc_path = os.path.join(subject_dir, 'stats', 'rh.aparc.stats')
+    if os.path.exists(rh_aparc_path):
+        rh_stats = parse_aparc_stats(rh_aparc_path)
+        stats['rh_aparc'] = rh_stats
+    
+    return stats
+
+def parse_aseg_stats(aseg_path: str) -> Dict:
+    """Parse aseg.stats file for subcortical volumes."""
+    stats = {}
+    with open(aseg_path, 'r') as f:
+        for line in f:
+            if line.startswith('#') or not line.strip():
+                continue
+            parts = line.strip().split()
+            if len(parts) >= 4:
+                region = parts[4]
+                volume = float(parts[3])
+                stats[region] = volume
+    return stats
+
+def parse_aparc_stats(aparc_path: str) -> Dict:
+    """Parse aparc.stats file for cortical measurements."""
+    stats = {}
+    with open(aparc_path, 'r') as f:
+        for line in f:
+            if line.startswith('#') or not line.strip():
+                continue
+            parts = line.strip().split()
+            if len(parts) >= 4:
+                region = parts[4]
+                thickness = float(parts[2])
+                area = float(parts[3])
+                volume = float(parts[4])
+                stats[region] = {
+                    'thickness': thickness,
+                    'area': area,
+                    'volume': volume
+                }
+    return stats
+
+def generate_neurotokens(fs_stats: Dict, subject_id: str, session: str) -> Dict:
+    """Generate neurotokens from FreeSurfer statistics."""
+    tokens = {
+        'subject_id': subject_id,
+        'session': session,
+        'timestamp': pd.Timestamp.now().isoformat(),
+        'regions': {}
+    }
+    
+    # Subcortical regions (aseg)
+    if 'aseg' in fs_stats:
+        for region, volume in fs_stats['aseg'].items():
+            tokens['regions'][f'aseg_{region}'] = {
+                'volume': volume,
+                'type': 'subcortical'
+            }
+    
+    # Left hemisphere cortical regions
+    if 'lh_aparc' in fs_stats:
+        for region, metrics in fs_stats['lh_aparc'].items():
+            tokens['regions'][f'lh_{region}'] = {
+                'thickness': metrics['thickness'],
+                'area': metrics['area'],
+                'volume': metrics['volume'],
+                'type': 'cortical_left'
+            }
+    
+    # Right hemisphere cortical regions
+    if 'rh_aparc' in fs_stats:
+        for region, metrics in fs_stats['rh_aparc'].items():
+            tokens['regions'][f'rh_{region}'] = {
+                'thickness': metrics['thickness'],
+                'area': metrics['area'],
+                'volume': metrics['volume'],
+                'type': 'cortical_right'
+            }
+    
+    return tokens
+
+def compute_z_scores(tokens_list: List[Dict], region: str, metric: str) -> List[float]:
+    """Compute z-scores for a specific region and metric across subjects."""
+    values = []
+    for tokens in tokens_list:
+        if region in tokens['regions'] and metric in tokens['regions'][region]:
+            values.append(tokens['regions'][region][metric])
+    
+    if not values:
+        return []
+    
+    mean_val = np.mean(values)
+    std_val = np.std(values)
+    
+    if std_val == 0:
+        return [0.0] * len(values)
+    
+    z_scores = [(v - mean_val) / std_val for v in values]
+    return z_scores
+
+def save_neurotokens(tokens: Dict, output_path: str) -> None:
+    """Save neurotokens to JSON file."""
+    with open(output_path, 'w') as f:
+        json.dump(tokens, f, indent=2)
+
+def load_neurotokens(input_path: str) -> Dict:
+    """Load neurotokens from JSON file."""
+    with open(input_path, 'r') as f:
+        return json.load(f)
+
+def create_transformer_dataset(tokens_list: List[Dict], labels: List[int], 
+                             output_dir: str) -> None:
+    """Create dataset for transformer training."""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Extract features and create token sequences
+    features = []
+    for tokens in tokens_list:
+        region_features = []
+        for region_name, region_data in tokens['regions'].items():
+            if isinstance(region_data, dict):
+                # For cortical regions with multiple metrics
+                feature_vector = [
+                    region_data.get('volume', 0),
+                    region_data.get('thickness', 0),
+                    region_data.get('area', 0)
+                ]
+            else:
+                # For subcortical regions with just volume
+                feature_vector = [region_data]
+            
+            region_features.append({
+                'region': region_name,
+                'features': feature_vector
+            })
+        
+        features.append(region_features)
+    
+    # Save processed data
+    dataset = {
+        'features': features,
+        'labels': labels,
+        'num_regions': len(features[0]) if features else 0,
+        'feature_dim': len(features[0][0]['features']) if features and features[0] else 0
+    }
+    
+    with open(os.path.join(output_dir, 'transformer_dataset.json'), 'w') as f:
+        json.dump(dataset, f, indent=2)
+    
+    # Save metadata
+    metadata = {
+        'num_subjects': len(tokens_list),
+        'num_classes': len(set(labels)),
+        'class_distribution': {label: labels.count(label) for label in set(labels)}
+    }
+    
+    with open(os.path.join(output_dir, 'metadata.json'), 'w') as f:
+        json.dump(metadata, f, indent=2)
 
 if __name__ == "__main__":
     import sys
