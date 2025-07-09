@@ -48,7 +48,7 @@ AlzheimersSegmentation/
 │   └── oasis2_config.json    # OASIS-2 specific configuration
 ├── examples/                 # Usage examples and demonstrations
 │   └── oasis2_example.py     # Complete example pipeline
-├── random/                   # Unused/legacy files
+├── random/                   # Legacy
 ├── requirements.txt          # Python dependencies
 └── README.md                 # This file
 ```
