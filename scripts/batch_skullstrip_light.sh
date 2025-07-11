@@ -30,8 +30,8 @@ find "$PROCESSED_DIR" -type d -name 'session_*' | while read -r session_dir; do
     
     echo "[INFO] Stripping $T1_AVG with mri_watershed..." | tee -a "$LOGFILE"
     
-    # Use mri_watershed which is much lighter than mri_synthstrip
-    mri_watershed -T1 -atlas -surf "$T1_AVG" "$session_dir/brainmask.mgz"
+    # Use mri_watershed (no -surf!)
+    mri_watershed -T1 -atlas "$T1_AVG" "$session_dir/brainmask.mgz"
     
     if [ $? -eq 0 ] && [ -f "$session_dir/brainmask.mgz" ]; then
         # Apply the brain mask to get the skull-stripped image
