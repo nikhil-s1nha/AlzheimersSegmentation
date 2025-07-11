@@ -11,8 +11,13 @@ fi
 
 PROCESSED_DIR="$1"
 LOGFILE="skullstrip_light.log"
+QCLOG="skullstrip_qc.log"
+
+THRESHOLD=0.85
 
 echo "[INFO] Starting lightweight skull-stripping with mri_watershed..." | tee "$LOGFILE"
+
+echo "[INFO] QC log for skull-stripping" > "$QCLOG"
 
 find "$PROCESSED_DIR" -type d -name 'session_*' | while read -r session_dir; do
     T1_AVG="$session_dir/T1_avg.mgz"
@@ -38,9 +43,24 @@ find "$PROCESSED_DIR" -type d -name 'session_*' | while read -r session_dir; do
         mri_mask "$T1_AVG" "$session_dir/brainmask.mgz" "$T1_STRIPPED"
         
         if [ $? -eq 0 ] && [ -f "$T1_STRIPPED" ]; then
-            echo "[SUCCESS] Stripped $T1_AVG -> $T1_STRIPPED" | tee -a "$LOGFILE"
+            # QC: Compare nonzero voxels
+            orig_vox=$(mri_stats --nonzero "$T1_AVG" | grep "Number of nonzero voxels" | awk '{print $6}')
+            strip_vox=$(mri_stats --nonzero "$T1_STRIPPED" | grep "Number of nonzero voxels" | awk '{print $6}')
+            
+            if [ -z "$orig_vox" ] || [ -z "$strip_vox" ]; then
+                echo "[ERROR] QC failed for $T1_AVG (could not count voxels)" | tee -a "$QCLOG"
+            else
+                ratio=$(echo "$strip_vox / $orig_vox" | bc -l)
+                if (( \
+$(echo "$ratio < $THRESHOLD" | bc -l) )); then
+                    echo "[WARN] $T1_STRIPPED failed QC: $strip_vox/$orig_vox = $ratio" | tee -a "$QCLOG"
+                else
+                    echo "[SUCCESS] $T1_STRIPPED passed QC: $strip_vox/$orig_vox = $ratio" | tee -a "$QCLOG"
+                fi
+            fi
             # Clean up intermediate files
             rm -f "$session_dir/brainmask.mgz"
+            echo "[SUCCESS] Stripped $T1_AVG -> $T1_STRIPPED" | tee -a "$LOGFILE"
         else
             echo "[ERROR] Failed to apply mask to $T1_AVG" | tee -a "$LOGFILE"
         fi
@@ -54,4 +74,5 @@ find "$PROCESSED_DIR" -type d -name 'session_*' | while read -r session_dir; do
 
 done
 
-echo "[INFO] Lightweight skull-stripping complete." | tee -a "$LOGFILE" 
+echo "[INFO] Lightweight skull-stripping complete." | tee -a "$LOGFILE"
+echo "[INFO] QC complete. See $QCLOG for details." | tee -a "$LOGFILE" 
