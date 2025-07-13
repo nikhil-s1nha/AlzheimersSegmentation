@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Batch FreeSurfer recon-all for all skull-stripped OASIS-2 sessions
-# Sets SUBJECTS_DIR to ~/freesurfer_subjects (local for speed)
+# Sets SUBJECTS_DIR to /Volumes/SEAGATE_NIKHIL/freesurfer_subjects (external drive)
 # Processes each T1_stripped.mgz as a separate subject
 
-export SUBJECTS_DIR="$HOME/freesurfer_subjects"
+export SUBJECTS_DIR="/Volumes/SEAGATE_NIKHIL/freesurfer_subjects"
 mkdir -p "$SUBJECTS_DIR"
 
 find /Volumes/SEAGATE_NIKHIL/OASIS_Processed -name T1_stripped.mgz | while read t1; do
