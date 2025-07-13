@@ -10,12 +10,19 @@ mkdir -p "$SUBJECTS_DIR"
 find /Volumes/SEAGATE_NIKHIL/OASIS_Processed -name T1_stripped.mgz | while read t1; do
     subj=$(echo $t1 | awk -F'/' '{print $(NF-2)"_"$(NF-1)}')
     subjdir="$SUBJECTS_DIR/$subj"
-    mkdir -p "$subjdir/mri"
-    cp "$t1" "$subjdir/mri/orig.mgz"
-    echo "[INFO] Running recon-all import for $subj..."
-    recon-all -subject "$subj" -i "$subjdir/mri/orig.mgz"
+    
+    echo "[INFO] Processing $subj..."
+    
+    # Create proper FreeSurfer directory structure
+    mkdir -p "$subjdir/mri/orig"
+    
+    # Copy T1_stripped.mgz as 001.mgz (FreeSurfer expects this name)
+    cp "$t1" "$subjdir/mri/orig/001.mgz"
+    
+    # Run recon-all -all (no need for import step since we set up the structure)
     echo "[INFO] Running recon-all -all for $subj..."
-    recon-all -subject "$subj" -all
+    recon-all -s "$subj" -all
+    
     echo "[INFO] Finished $subj."
 done
 
