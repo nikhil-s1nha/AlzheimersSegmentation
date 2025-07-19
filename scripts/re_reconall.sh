@@ -4,7 +4,7 @@
 export FREESURFER_HOME=/usr/local/freesurfer/8.0.0
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
 
-# Input and output directories
+
 INPUT_DIR=~/data/OASIS_Processed
 SUBJECTS_DIR=~/subjects  # Where FreeSurfer output goes
 export SUBJECTS_DIR
