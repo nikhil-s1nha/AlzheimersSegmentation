@@ -1,15 +1,24 @@
 #!/bin/bash
 
-# Directory paths - Updated for macOS compatibility
-DATA_DIR="/Users/NikhilSinha/Downloads/ASDRP/AlzheimersSegmentation/AlzheimersSegmentation/data"  # Update this path
-SUBJECTS_DIR="$HOME/freesurfer_subjects"  # Use home directory for FreeSurfer subjects
+# EC2-optimized recon-all script for OASIS-2 processing
+# Designed for high-performance cloud instances
+
+# Directory paths for EC2
+DATA_DIR="/mnt/data/oasis_data"  # Update this to your EC2 data path
+SUBJECTS_DIR="/home/ubuntu/subjects"  # Update this to your EC2 subjects path
 LOG_DIR="logs"
-N_JOBS=4  # Reduced for macOS - adjust based on your system
+N_JOBS=48  # High parallel jobs for EC2 instances (adjust based on your instance type)
 
 # Create necessary directories
 mkdir -p "$SUBJECTS_DIR"
 mkdir -p "$LOG_DIR"
 export SUBJECTS_DIR
+
+echo "🚀 Starting EC2-optimized recon-all processing..." | tee "$LOG_DIR/recon_all_ec2.log"
+echo "🖥️  Instance: $(hostname)" | tee -a "$LOG_DIR/recon_all_ec2.log"
+echo "⚡ Parallel jobs: $N_JOBS" | tee -a "$LOG_DIR/recon_all_ec2.log"
+echo "📁 Data directory: $DATA_DIR" | tee -a "$LOG_DIR/recon_all_ec2.log"
+echo "📁 Subjects directory: $SUBJECTS_DIR" | tee -a "$LOG_DIR/recon_all_ec2.log"
 
 # Function to process a single subject
 process_subject() {
@@ -43,11 +52,11 @@ process_subject() {
         local end_time=$(date +%s)
         local duration=$(( (end_time - start_time) / 60 ))
         echo "✅ $subj_id completed successfully in ${duration} minutes"
-        echo "$subj_id: ${duration} minutes" >> "$LOG_DIR/time_summary.txt"
+        echo "$subj_id: ${duration} minutes" >> "$LOG_DIR/time_summary_ec2.txt"
         return 0
     else
         echo "❌ $subj_id failed - check $error_file for details"
-        echo "$subj_id: FAILED" >> "$LOG_DIR/time_summary.txt"
+        echo "$subj_id: FAILED" >> "$LOG_DIR/time_summary_ec2.txt"
         return 1
     fi
 }
@@ -57,20 +66,15 @@ export -f process_subject
 # Check if DATA_DIR exists
 if [ ! -d "$DATA_DIR" ]; then
     echo "❌ Error: DATA_DIR '$DATA_DIR' does not exist!"
-    echo "Please update the DATA_DIR variable in this script to point to your OASIS data directory."
+    echo "Please update the DATA_DIR variable in this script to point to your EC2 data directory."
     exit 1
 fi
 
 # Check if GNU parallel is available
 if ! command -v parallel &> /dev/null; then
-    echo "⚠️  GNU parallel not found. Installing via Homebrew..."
-    if command -v brew &> /dev/null; then
-        brew install parallel
-    else
-        echo "❌ Homebrew not found. Please install GNU parallel manually:"
-        echo "   brew install parallel"
-        exit 1
-    fi
+    echo "⚠️  GNU parallel not found. Installing..."
+    sudo apt-get update
+    sudo apt-get install -y parallel
 fi
 
 echo "🔍 Searching for session directories in $DATA_DIR..."
@@ -85,8 +89,12 @@ find "$DATA_DIR" -type d -name "*session_*" | sort | \
 
 echo "🎉 Processing complete! Check $LOG_DIR for detailed logs."
 echo "📊 Summary of processing times:"
-if [ -f "$LOG_DIR/time_summary.txt" ]; then
-    cat "$LOG_DIR/time_summary.txt"
+if [ -f "$LOG_DIR/time_summary_ec2.txt" ]; then
+    cat "$LOG_DIR/time_summary_ec2.txt"
 else
     echo "No time summary available."
 fi
+
+# Show final disk usage
+echo -e "\n💾 Final Disk Usage:"
+df -h "$SUBJECTS_DIR" 
