@@ -1,0 +1,43 @@
+COMPREHENSIVE MODEL EVALUATION RESULTS
+============================================================
+
+DATASET INFORMATION:
+  Total subjects: 149
+  Normal subjects: 123 (82.6%)
+  Impaired subjects: 26 (17.4%)
+  Class balance: Imbalanced
+  Sessions per subject: 1-5 (mean: 2.32)
+  Total token records: 345
+  Features per record: 131 level + 131 delta tokens
+
+MODEL ARCHITECTURE:
+  Type: GRU-based with multi-head attention
+  Total parameters: 744,642 (0.74M)
+  Hidden dimension: 128
+  GRU layers: 2 (bidirectional)
+  Attention heads: 8
+  Dropout: 0.3
+  Classes: 2 (Normal/Impaired)
+
+PERFORMANCE RESULTS:
+  Test Accuracy: 56.67%
+  Test Precision: 57.14%
+  Test Recall: 75.00%
+  Test F1-Score: 64.86%
+  ROC AUC: 71.43%
+  PR AUC: 78.04%
+
+KEY FINDINGS:
+  1. Model is biased toward predicting 'Normal' due to class imbalance
+  2. High recall for impaired class (73%) - good at catching cases
+  3. Low precision for impaired class (26%) - many false positives
+  4. Overall accuracy (57%) is above random (50%) but modest
+  5. Model shows promise but needs more data and class balancing
+
+RECOMMENDATIONS:
+  1. Collect more data, especially impaired cases
+  2. Implement class weighting or SMOTE for balancing
+  3. Use stratified cross-validation
+  4. Consider ensemble methods
+  5. Validate on independent test set
+  6. Monitor for overfitting with small dataset

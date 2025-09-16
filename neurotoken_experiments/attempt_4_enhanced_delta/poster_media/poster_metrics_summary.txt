@@ -1,0 +1,46 @@
+NEUROTOKEN MODEL PERFORMANCE SUMMARY (200 subjects)
+========================================================
+
+OVERALL PERFORMANCE:
+- Accuracy: 0.755 (75.5%)
+- Weighted Precision: 0.759 (75.9%)
+- Weighted Recall: 0.755 (75.5%)
+- Weighted F1-Score: 0.756 (75.6%)
+
+PER-CLASS PERFORMANCE:
+CN (Cognitively Normal):
+- Precision: 0.854 (85.4%)
+- Recall: 0.814 (81.4%)
+- F1-Score: 0.833 (83.3%)
+- Support: 86 subjects
+
+MCI (Mild Cognitive Impairment):
+- Precision: 0.686 (68.6%)
+- Recall: 0.686 (68.6%)
+- F1-Score: 0.686 (68.6%)
+- Support: 70 subjects
+
+AD (Alzheimer's Disease):
+- Precision: 0.682 (68.2%)
+- Recall: 0.750 (75.0%)
+- F1-Score: 0.714 (71.4%)
+- Support: 40 subjects
+
+CONFUSION MATRIX:
+                Predicted
+              CN   MCI   AD
+True CN      70    14     2
+True MCI     10    48    12
+True AD       2     8    30
+
+CLASS DISTRIBUTION:
+- CN: 86 subjects (43.9%)
+- MCI: 70 subjects (35.7%)
+- AD: 40 subjects (20.4%)
+
+KEY INSIGHTS:
+- CN is easiest to identify (81.4% recall)
+- AD shows good performance (75.0% recall)
+- MCI is most challenging (68.6% recall)
+- Overall accuracy (75.5%) is realistic for medical AI
+- Model shows promise but needs more data for MCI classification

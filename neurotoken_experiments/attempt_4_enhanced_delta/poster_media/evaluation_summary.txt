@@ -1,0 +1,27 @@
+COMPREHENSIVE EVALUATION SUMMARY
+============================================================
+
+DATASET SUMMARY:
+  Total subjects: 149
+  Normal subjects: 123 (82.6%)
+  Impaired subjects: 26 (17.4%)
+  Class balance: Imbalanced
+
+MODEL SUMMARY:
+  Total parameters: 744,642
+  Model size: 0.74M parameters
+  Architecture: GRU-based with attention
+
+PERFORMANCE EXPECTATIONS:
+  Based on existing results:
+  - Test Accuracy: ~57%
+  - Test F1-Score: ~0.65
+  - Test Precision: ~0.57
+  - Test Recall: ~0.75
+  - ROC AUC: ~0.71
+
+RECOMMENDATIONS:
+  - Class imbalance detected - consider data augmentation or class weighting
+  - Validate on independent test set
+  - Consider cross-validation for more robust evaluation
+  - Monitor for overfitting with small dataset
